@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://www.mayunle.com/"/>
-  <updated>2017-03-07T13:56:56.141Z</updated>
+  <updated>2017-04-27T15:07:16.834Z</updated>
   <id>http://www.mayunle.com/</id>
   
   <author>
@@ -14,6 +14,44 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>drbd简介和安装配置</title>
+    <link href="http://www.mayunle.com/2017/04/27/drbd%E7%AE%80%E4%BB%8B%E5%92%8C%E5%AE%89%E8%A3%85%E9%85%8D%E7%BD%AE/"/>
+    <id>http://www.mayunle.com/2017/04/27/drbd简介和安装配置/</id>
+    <published>2017-04-27T15:03:48.000Z</published>
+    <updated>2017-04-27T15:07:16.834Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="drbd简介和安装配置"><a href="#drbd简介和安装配置" class="headerlink" title="drbd简介和安装配置"></a>drbd简介和安装配置</h1><h2 id="一、DRBD简介"><a href="#一、DRBD简介" class="headerlink" title="一、DRBD简介"></a>一、DRBD简介</h2><p>&emsp;&emsp;分布式复制块设备(DRBD技术)是一种基于软件的，无共享，复制的存储解决方案，在服务器之间对块设备（硬盘、分区、逻辑卷）进行镜像。<br>&emsp;&emsp;DRBD更多的用于HA高可用集群里，对两个服务器之间的存储设备进行镜像同步，一般采用单主模式，适用于EXT3、EXT4、XFS等常见操作系统，配置文件较少、简洁易用。<br>&emsp;&emsp;DRBD提供三种不同的复制方式。A：数据一旦写入磁盘并发送到网络中就认为完成写入；B：远端接收确认就认为完成了写入；C：收到写入确定就认为完成了写入。A方式在单节点发生故障时可能丢失数据；B方式在双节点同时故障时可能丢失数据；<strong>C方式基本没有数据丢失的风险，所以也是当前应用最多最广泛的一种方式。</strong><br>&emsp;&emsp;HA高可用集群中常有列脑的风险。DRBD支持列脑自动修复，提供几种模式供你选择。1、丢弃比较新的主节点的所做的修改；2、丢弃老的主节点所做的修改；3、丢弃修改比较少的主节点所做的修改；4、一个节点数据没有发生变化的完美的修复列脑。<strong>自我认为，这几种方式都不怎么可靠，生产环境中还是手动修复比较好。</strong><br>&emsp;&emsp;服务器块设备的写入通常不会直接写入到磁盘，而是先写入缓存中，提高写入速率，而这样就有了断电之后数据丢失的风险。DRBD采用磁盘刷新来解决这个问题，绕开写缓存，直接将数据写入磁盘。</p>
+<h2 id="二、DRBD安装配置"><a href="#二、DRBD安装配置" class="headerlink" title="二、DRBD安装配置"></a>二、DRBD安装配置</h2><h3 id="1、环境介绍"><a href="#1、环境介绍" class="headerlink" title="1、环境介绍"></a>1、环境介绍</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">两台Centos7机器，最小安装，系统盘sda,各自挂载一块数据盘sdb</div><div class="line">master:10.157.0.8</div><div class="line">slave：10.157.0.164</div><div class="line">以上两条写入/etc/hosts文件</div><div class="line">两台机器均关闭防火墙和selinux，开机不启动</div><div class="line">/dev/sdb 可以分区，但是不要格式化</div></pre></td></tr></table></figure>
+<h3 id="2、通过yum源安装drbd和相关软件包-双机执行"><a href="#2、通过yum源安装drbd和相关软件包-双机执行" class="headerlink" title="2、通过yum源安装drbd和相关软件包(双机执行)"></a>2、通过yum源安装drbd和相关软件包(双机执行)</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"># rpm --import http://elrepo.org/RPM-GPG-KEY-elrepo.org</div><div class="line"># rpm -Uvh http://www.elrepo.org/elrepo-release-7.0-2.el7.elrepo.noarch.rpm</div><div class="line"># yum -y install drbd84-utils kmod-drbd84</div></pre></td></tr></table></figure>
+<h3 id="3、系统默认内核不支持drbd模块，更新内核（双机执行）"><a href="#3、系统默认内核不支持drbd模块，更新内核（双机执行）" class="headerlink" title="3、系统默认内核不支持drbd模块，更新内核（双机执行）"></a>3、系统默认内核不支持drbd模块，更新内核（双机执行）</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># yum -y install kernel-devel kernel kernel-headers</div></pre></td></tr></table></figure>
+<p>重启操作系统，应用更新。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">加载DRBD模块：</div><div class="line"># modprobe drbd</div></pre></td></tr></table></figure>
+<h3 id="4、在两个节点上配置drbd资源描述文件-etc-drbd-d-r0-res（双机执行）"><a href="#4、在两个节点上配置drbd资源描述文件-etc-drbd-d-r0-res（双机执行）" class="headerlink" title="4、在两个节点上配置drbd资源描述文件: /etc/drbd.d/r0.res（双机执行）"></a>4、在两个节点上配置drbd资源描述文件: /etc/drbd.d/r0.res（双机执行）</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">resource r0 &#123;</div><div class="line">   protocol C;</div><div class="line">   device /dev/drbd0;</div><div class="line">   disk /dev/sdb1;</div><div class="line">   meta-disk internal;</div><div class="line">   on master&#123;</div><div class="line">       address 10.157.0.8:7789;</div><div class="line">   &#125;</div><div class="line">   on slave&#123;</div><div class="line">       address 10.157.0.164:7789;</div><div class="line">   &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="5、设置drbd资源（双机执行）"><a href="#5、设置drbd资源（双机执行）" class="headerlink" title="5、设置drbd资源（双机执行）"></a>5、设置drbd资源（双机执行）</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"># drbdadm create-md r0   （创建元数据设备）</div><div class="line"></div><div class="line"># drbdadm up r0 (启动节点资源)</div></pre></td></tr></table></figure>
+<h3 id="6、启动drbd服务-双机执行"><a href="#6、启动drbd服务-双机执行" class="headerlink" title="6、启动drbd服务 (双机执行)"></a>6、启动drbd服务 (双机执行)</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># systemctl start drbd</div></pre></td></tr></table></figure>
+<h3 id="7、指定master为主节点-master上执行"><a href="#7、指定master为主节点-master上执行" class="headerlink" title="7、指定master为主节点(master上执行)"></a>7、指定master为主节点(master上执行)</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># drbdadm primary --force r0</div></pre></td></tr></table></figure>
+<h3 id="8、查看drbd状态"><a href="#8、查看drbd状态" class="headerlink" title="8、查看drbd状态"></a>8、查看drbd状态</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">watch -n1 cat /proc/drbd</div></pre></td></tr></table></figure>
+<p>发现drbd正在进行同步：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">version: 8.4.9-1 (api:1/proto:86-101)</div><div class="line">GIT-hash: 9976da086367a2476503ef7f6b13d4567327a280 build by akemi@Build64R7, 2016-12-04 01:08:48</div><div class="line"> 0: cs:SyncSource ro:Primary/Secondary ds:UpToDate/Inconsistent C r-----</div><div class="line">    ns:704256 nr:0 dw:0 dr:704984 al:0 bm:0 lo:0 pe:0 ua:0 ap:0 ep:1 wo:f oos:16071388</div><div class="line">	[&gt;....................] sync&apos;ed:  4.3% (15692/16380)M</div><div class="line">	finish: 0:10:12 speed: 26,244 (17,176) K/sec</div></pre></td></tr></table></figure>
+<h2 id="三、DRBD简单使用与验证"><a href="#三、DRBD简单使用与验证" class="headerlink" title="三、DRBD简单使用与验证"></a>三、DRBD简单使用与验证</h2><h3 id="1、在主节点上格式化-dev-drbd0-（master上执行）"><a href="#1、在主节点上格式化-dev-drbd0-（master上执行）" class="headerlink" title="1、在主节点上格式化/dev/drbd0 （master上执行）"></a>1、在主节点上格式化/dev/drbd0 （master上执行）</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># mkfs.xfs /dev/drbd0</div></pre></td></tr></table></figure>
+<h3 id="2、挂载到准备好的目录上-master上执行"><a href="#2、挂载到准备好的目录上-master上执行" class="headerlink" title="2、挂载到准备好的目录上(master上执行)"></a>2、挂载到准备好的目录上(master上执行)</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># mount /dev/drbd0 /media/drbd</div></pre></td></tr></table></figure>
+<p>在/media/drbd下创建一个文件test，写入一些数据</p>
+<h3 id="3、手动切换"><a href="#3、手动切换" class="headerlink" title="3、手动切换"></a>3、手动切换</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"># umount /media/drbd (master上执行)</div><div class="line"># drbdadm primary --force r0 (slave上执行，指定slave为主节点)</div><div class="line"># mount /dev/drbd0 /media/drbd （slave上执行）</div></pre></td></tr></table></figure>
+<p>发现slave节点上的/media/drbd目录下出现test文件，内容一样。</p>
+<h2 id="以上是DRBD单独的安装配置过程，想要让DRBD自动的完成主备的切换可以用pacemaker来配合完成，下一节再单独写。"><a href="#以上是DRBD单独的安装配置过程，想要让DRBD自动的完成主备的切换可以用pacemaker来配合完成，下一节再单独写。" class="headerlink" title="以上是DRBD单独的安装配置过程，想要让DRBD自动的完成主备的切换可以用pacemaker来配合完成，下一节再单独写。"></a>以上是DRBD单独的安装配置过程，想要让DRBD自动的完成主备的切换可以用pacemaker来配合完成，下一节再单独写。</h2><h4 id="参考：http-blog-csdn-net-hewy0526-article-details-18366653"><a href="#参考：http-blog-csdn-net-hewy0526-article-details-18366653" class="headerlink" title="参考：http://blog.csdn.net/hewy0526/article/details/18366653"></a>参考：<a href="http://blog.csdn.net/hewy0526/article/details/18366653" target="_blank" rel="external">http://blog.csdn.net/hewy0526/article/details/18366653</a></h4><h4 id="《DRBD中文指南》网盘链接：http-pan-baidu-com-s-1nvhquiH-密码：2mdf"><a href="#《DRBD中文指南》网盘链接：http-pan-baidu-com-s-1nvhquiH-密码：2mdf" class="headerlink" title="《DRBD中文指南》网盘链接：http://pan.baidu.com/s/1nvhquiH 密码：2mdf"></a>《DRBD中文指南》网盘链接：<a href="http://pan.baidu.com/s/1nvhquiH" target="_blank" rel="external">http://pan.baidu.com/s/1nvhquiH</a> 密码：2mdf</h4>]]></content>
+    
+    <summary type="html">
+    
+      分布式复制块设备(DRBD技术)是一种基于软件的，无共享，复制的存储解决方案，在服务器之间对块设备（硬盘、分区、逻辑卷）进行镜像。本篇是对DRBD简单介绍和安装使用 
+    
+    </summary>
+    
+    
+      <category term="存储" scheme="http://www.mayunle.com/tags/%E5%AD%98%E5%82%A8/"/>
+    
+  </entry>
   
   <entry>
     <title>千里之行，始于足下</title>

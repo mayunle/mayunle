@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+
+    <!--[if lt IE 9]>
+        <style>body {display: none; background: none !important} </style>
+        <meta http-equiv="Refresh" Content="0; url=//outdatedbrowser.com/" />
+    <![endif]-->
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="format-detection" content="telephone=no" />
+<meta name="author" content="马云乐" />
+
+
+
+<meta name="description" content="分布式复制块设备(DRBD技术)是一种基于软件的，无共享，复制的存储解决方案，在服务器之间对块设备（硬盘、分区、逻辑卷）进行镜像。本篇是对DRBD简单介绍和安装使用">
+<meta property="og:type" content="article">
+<meta property="og:title" content="drbd简介和安装配置">
+<meta property="og:url" content="http://www.mayunle.com/2017/04/27/drbd简介和安装配置/index.html">
+<meta property="og:site_name" content="风雨中，谁又将谁遗忘">
+<meta property="og:description" content="分布式复制块设备(DRBD技术)是一种基于软件的，无共享，复制的存储解决方案，在服务器之间对块设备（硬盘、分区、逻辑卷）进行镜像。本篇是对DRBD简单介绍和安装使用">
+<meta property="og:updated_time" content="2017-04-27T15:07:16.834Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="drbd简介和安装配置">
+<meta name="twitter:description" content="分布式复制块设备(DRBD技术)是一种基于软件的，无共享，复制的存储解决方案，在服务器之间对块设备（硬盘、分区、逻辑卷）进行镜像。本篇是对DRBD简单介绍和安装使用">
+
+<link rel="apple-touch-icon" href= "/apple-touch-icon.png">
+
+
+    <link rel="alternate" href="/atom.xml" title="风雨中，谁又将谁遗忘" type="application/atom+xml">
+
+
+
+    <link rel="shortcut icon" href="/img/favicon.ico">
+
+
+
+    <link href="//cdn.bootcss.com/animate.css/3.5.1/animate.min.css" rel="stylesheet">
+
+
+
+    <link href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet">
+
+
+
+    <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+    <link href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-minimal.css" rel="stylesheet">
+
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+<link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+
+
+<title>drbd简介和安装配置 | 风雨中，谁又将谁遗忘</title>
+
+<script src="//cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+<script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script>
+
+<script>
+    var yiliaConfig = {
+        fancybox: true,
+        animate: true,
+        isHome: false,
+        isPost: true,
+        isArchive: false,
+        isTag: false,
+        isCategory: false,
+        fancybox_js: "//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.js",
+        scrollreveal: "//cdn.bootcss.com/scrollReveal.js/3.1.4/scrollreveal.min.js",
+        search: true
+    }
+</script>
+
+
+    <script>
+        yiliaConfig.jquery_ui = [true, "//cdn.bootcss.com/jqueryui/1.10.4/jquery-ui.min.js", "//cdn.bootcss.com/jqueryui/1.10.4/css/jquery-ui.min.css"];
+    </script>
+
+
+
+    <script> yiliaConfig.rootUrl = "\/";</script>
+
+
+
+
+
+
+</head>
+<body>
+  <div id="container">
+    <div class="left-col">
+    <div class="overlay"></div>
+<div class="intrude-less">
+    <header id="header" class="inner">
+        <a href="/" class="profilepic">
+            <img src="/img/avatar.jpg" class="animated zoomIn">
+        </a>
+        <hgroup>
+          <h1 class="header-author"><a href="/">马云乐</a></h1>
+        </hgroup>
+
+        
+
+        
+            <form id="search-form">
+            <input type="text" id="local-search-input" name="q" placeholder="search..." class="search form-control" autocomplete="off" autocorrect="off" searchonload="false" />
+            <i class="fa fa-times" onclick="resetSearch()"></i>
+            </form>
+            <div id="local-search-result"></div>
+            <p class='no-result'>No results found <i class='fa fa-spinner fa-pulse'></i></p>
+        
+
+
+        
+            <div id="switch-btn" class="switch-btn">
+                <div class="icon">
+                    <div class="icon-ctn">
+                        <div class="icon-wrap icon-house" data-idx="0">
+                            <div class="birdhouse"></div>
+                            <div class="birdhouse_holes"></div>
+                        </div>
+                        <div class="icon-wrap icon-ribbon hide" data-idx="1">
+                            <div class="ribbon"></div>
+                        </div>
+                        
+                        <div class="icon-wrap icon-link hide" data-idx="2">
+                            <div class="loopback_l"></div>
+                            <div class="loopback_r"></div>
+                        </div>
+                        
+                        
+                    </div>
+                    
+                </div>
+                <div class="tips-box hide">
+                    <div class="tips-arrow"></div>
+                    <ul class="tips-inner">
+                        <li>菜单</li>
+                        <li>标签</li>
+                        
+                        <li>友情链接</li>
+                        
+                        
+                    </ul>
+                </div>
+            </div>
+        
+
+        <div id="switch-area" class="switch-area">
+            <div class="switch-wrap">
+                <section class="switch-part switch-part1">
+                    <nav class="header-menu">
+                        <ul>
+                        
+                            <li><a href="/">主页</a></li>
+                        
+                            <li><a href="/archives/">所有文章</a></li>
+                        
+                            <li><a href="/tags/">标签云</a></li>
+                        
+                            <li><a href="/about/">关于我</a></li>
+                        
+                        </ul>
+                    </nav>
+                    <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa Email" href="mailto:787036789@qq.com" title="Email"></a>
+                            
+                                <a class="fa QQ" href="/qq" title="QQ"></a>
+                            
+                                <a class="fa 微信" href="/wechat" title="微信"></a>
+                            
+                        </ul>
+                    </nav>
+                </section>
+                
+                
+                <section class="switch-part switch-part2">
+                    <div class="widget tagcloud" id="js-tagcloud">
+                        <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/hexo/">hexo</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/存储/">存储</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/杂谈/">杂谈</a></li></ul>
+                    </div>
+                </section>
+                
+                
+                
+                <section class="switch-part switch-part3">
+                    <div id="js-friends">
+                    
+                      <a class="main-nav-link switch-friends-link" href="https://hexo.io">Hexo</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="https://pages.github.com/">GitHub</a>
+                    
+                    </div>
+                </section>
+                
+
+                
+            </div>
+        </div>
+    </header>                
+</div>
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+      <div class="overlay">
+          <div class="slider-trigger"></div>
+          <h1 class="header-author js-mobile-header hide"><a href="/" title="回到主页">马云乐</a></h1>
+      </div>
+    <div class="intrude-less">
+        <header id="header" class="inner">
+            <a href="/" class="profilepic">
+                <img src="/img/avatar.jpg" class="animated zoomIn">
+            </a>
+            <hgroup>
+              <h1 class="header-author"><a href="/" title="回到主页">马云乐</a></h1>
+            </hgroup>
+            
+            <nav class="header-menu">
+                <ul>
+                
+                    <li><a href="/">主页</a></li>
+                
+                    <li><a href="/archives/">所有文章</a></li>
+                
+                    <li><a href="/tags/">标签云</a></li>
+                
+                    <li><a href="/about/">关于我</a></li>
+                
+                <div class="clearfix"></div>
+                </ul>
+            </nav>
+            <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa Email" target="_blank" href="mailto:787036789@qq.com" title="Email"></a>
+                            
+                                <a class="fa QQ" target="_blank" href="/qq" title="QQ"></a>
+                            
+                                <a class="fa 微信" target="_blank" href="/wechat" title="微信"></a>
+                            
+                        </ul>
+            </nav>
+        </header>                
+    </div>
+    <link class="menu-list" tags="标签" friends="友情链接" about="关于我"/>
+</nav>
+      <div class="body-wrap"><article id="post-drbd简介和安装配置" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2017/04/27/drbd简介和安装配置/" class="article-date">
+      <time datetime="2017-04-27T15:03:48.000Z" itemprop="datePublished">2017-04-27</time>
+</a>
+
+ 
+    <a href="/2017/04/27/drbd简介和安装配置/#comments" title="查看评论">
+        <i class="fa fa-comments-o" aria-hidden="true"></i>
+        <span class="count-comment"></span>
+        
+            <span class="ds-thread-count" ></span>
+        
+        
+    </a>
+
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      drbd简介和安装配置
+    </h1>
+  
+
+      </header>
+      
+      <div class="article-info article-info-post">
+        
+
+        
+    <div class="article-tag tagcloud">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/存储/">存储</a></li></ul>
+    </div>
+
+        <div class="clearfix"></div>
+      </div>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+          
+        <h1 id="drbd简介和安装配置"><a href="#drbd简介和安装配置" class="headerlink" title="drbd简介和安装配置"></a>drbd简介和安装配置</h1><h2 id="一、DRBD简介"><a href="#一、DRBD简介" class="headerlink" title="一、DRBD简介"></a>一、DRBD简介</h2><p>&emsp;&emsp;分布式复制块设备(DRBD技术)是一种基于软件的，无共享，复制的存储解决方案，在服务器之间对块设备（硬盘、分区、逻辑卷）进行镜像。<br>&emsp;&emsp;DRBD更多的用于HA高可用集群里，对两个服务器之间的存储设备进行镜像同步，一般采用单主模式，适用于EXT3、EXT4、XFS等常见操作系统，配置文件较少、简洁易用。<br>&emsp;&emsp;DRBD提供三种不同的复制方式。A：数据一旦写入磁盘并发送到网络中就认为完成写入；B：远端接收确认就认为完成了写入；C：收到写入确定就认为完成了写入。A方式在单节点发生故障时可能丢失数据；B方式在双节点同时故障时可能丢失数据；<strong>C方式基本没有数据丢失的风险，所以也是当前应用最多最广泛的一种方式。</strong><br>&emsp;&emsp;HA高可用集群中常有列脑的风险。DRBD支持列脑自动修复，提供几种模式供你选择。1、丢弃比较新的主节点的所做的修改；2、丢弃老的主节点所做的修改；3、丢弃修改比较少的主节点所做的修改；4、一个节点数据没有发生变化的完美的修复列脑。<strong>自我认为，这几种方式都不怎么可靠，生产环境中还是手动修复比较好。</strong><br>&emsp;&emsp;服务器块设备的写入通常不会直接写入到磁盘，而是先写入缓存中，提高写入速率，而这样就有了断电之后数据丢失的风险。DRBD采用磁盘刷新来解决这个问题，绕开写缓存，直接将数据写入磁盘。</p>
+<h2 id="二、DRBD安装配置"><a href="#二、DRBD安装配置" class="headerlink" title="二、DRBD安装配置"></a>二、DRBD安装配置</h2><h3 id="1、环境介绍"><a href="#1、环境介绍" class="headerlink" title="1、环境介绍"></a>1、环境介绍</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">两台Centos7机器，最小安装，系统盘sda,各自挂载一块数据盘sdb</div><div class="line">master:10.157.0.8</div><div class="line">slave：10.157.0.164</div><div class="line">以上两条写入/etc/hosts文件</div><div class="line">两台机器均关闭防火墙和selinux，开机不启动</div><div class="line">/dev/sdb 可以分区，但是不要格式化</div></pre></td></tr></table></figure>
+<h3 id="2、通过yum源安装drbd和相关软件包-双机执行"><a href="#2、通过yum源安装drbd和相关软件包-双机执行" class="headerlink" title="2、通过yum源安装drbd和相关软件包(双机执行)"></a>2、通过yum源安装drbd和相关软件包(双机执行)</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"># rpm --import http://elrepo.org/RPM-GPG-KEY-elrepo.org</div><div class="line"># rpm -Uvh http://www.elrepo.org/elrepo-release-7.0-2.el7.elrepo.noarch.rpm</div><div class="line"># yum -y install drbd84-utils kmod-drbd84</div></pre></td></tr></table></figure>
+<h3 id="3、系统默认内核不支持drbd模块，更新内核（双机执行）"><a href="#3、系统默认内核不支持drbd模块，更新内核（双机执行）" class="headerlink" title="3、系统默认内核不支持drbd模块，更新内核（双机执行）"></a>3、系统默认内核不支持drbd模块，更新内核（双机执行）</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># yum -y install kernel-devel kernel kernel-headers</div></pre></td></tr></table></figure>
+<p>重启操作系统，应用更新。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">加载DRBD模块：</div><div class="line"># modprobe drbd</div></pre></td></tr></table></figure>
+<h3 id="4、在两个节点上配置drbd资源描述文件-etc-drbd-d-r0-res（双机执行）"><a href="#4、在两个节点上配置drbd资源描述文件-etc-drbd-d-r0-res（双机执行）" class="headerlink" title="4、在两个节点上配置drbd资源描述文件: /etc/drbd.d/r0.res（双机执行）"></a>4、在两个节点上配置drbd资源描述文件: /etc/drbd.d/r0.res（双机执行）</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">resource r0 &#123;</div><div class="line">   protocol C;</div><div class="line">   device /dev/drbd0;</div><div class="line">   disk /dev/sdb1;</div><div class="line">   meta-disk internal;</div><div class="line">   on master&#123;</div><div class="line">       address 10.157.0.8:7789;</div><div class="line">   &#125;</div><div class="line">   on slave&#123;</div><div class="line">       address 10.157.0.164:7789;</div><div class="line">   &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="5、设置drbd资源（双机执行）"><a href="#5、设置drbd资源（双机执行）" class="headerlink" title="5、设置drbd资源（双机执行）"></a>5、设置drbd资源（双机执行）</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"># drbdadm create-md r0   （创建元数据设备）</div><div class="line"></div><div class="line"># drbdadm up r0 (启动节点资源)</div></pre></td></tr></table></figure>
+<h3 id="6、启动drbd服务-双机执行"><a href="#6、启动drbd服务-双机执行" class="headerlink" title="6、启动drbd服务 (双机执行)"></a>6、启动drbd服务 (双机执行)</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># systemctl start drbd</div></pre></td></tr></table></figure>
+<h3 id="7、指定master为主节点-master上执行"><a href="#7、指定master为主节点-master上执行" class="headerlink" title="7、指定master为主节点(master上执行)"></a>7、指定master为主节点(master上执行)</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># drbdadm primary --force r0</div></pre></td></tr></table></figure>
+<h3 id="8、查看drbd状态"><a href="#8、查看drbd状态" class="headerlink" title="8、查看drbd状态"></a>8、查看drbd状态</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">watch -n1 cat /proc/drbd</div></pre></td></tr></table></figure>
+<p>发现drbd正在进行同步：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">version: 8.4.9-1 (api:1/proto:86-101)</div><div class="line">GIT-hash: 9976da086367a2476503ef7f6b13d4567327a280 build by akemi@Build64R7, 2016-12-04 01:08:48</div><div class="line"> 0: cs:SyncSource ro:Primary/Secondary ds:UpToDate/Inconsistent C r-----</div><div class="line">    ns:704256 nr:0 dw:0 dr:704984 al:0 bm:0 lo:0 pe:0 ua:0 ap:0 ep:1 wo:f oos:16071388</div><div class="line">	[&gt;....................] sync&apos;ed:  4.3% (15692/16380)M</div><div class="line">	finish: 0:10:12 speed: 26,244 (17,176) K/sec</div></pre></td></tr></table></figure>
+<h2 id="三、DRBD简单使用与验证"><a href="#三、DRBD简单使用与验证" class="headerlink" title="三、DRBD简单使用与验证"></a>三、DRBD简单使用与验证</h2><h3 id="1、在主节点上格式化-dev-drbd0-（master上执行）"><a href="#1、在主节点上格式化-dev-drbd0-（master上执行）" class="headerlink" title="1、在主节点上格式化/dev/drbd0 （master上执行）"></a>1、在主节点上格式化/dev/drbd0 （master上执行）</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># mkfs.xfs /dev/drbd0</div></pre></td></tr></table></figure>
+<h3 id="2、挂载到准备好的目录上-master上执行"><a href="#2、挂载到准备好的目录上-master上执行" class="headerlink" title="2、挂载到准备好的目录上(master上执行)"></a>2、挂载到准备好的目录上(master上执行)</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># mount /dev/drbd0 /media/drbd</div></pre></td></tr></table></figure>
+<p>在/media/drbd下创建一个文件test，写入一些数据</p>
+<h3 id="3、手动切换"><a href="#3、手动切换" class="headerlink" title="3、手动切换"></a>3、手动切换</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"># umount /media/drbd (master上执行)</div><div class="line"># drbdadm primary --force r0 (slave上执行，指定slave为主节点)</div><div class="line"># mount /dev/drbd0 /media/drbd （slave上执行）</div></pre></td></tr></table></figure>
+<p>发现slave节点上的/media/drbd目录下出现test文件，内容一样。</p>
+<h2 id="以上是DRBD单独的安装配置过程，想要让DRBD自动的完成主备的切换可以用pacemaker来配合完成，下一节再单独写。"><a href="#以上是DRBD单独的安装配置过程，想要让DRBD自动的完成主备的切换可以用pacemaker来配合完成，下一节再单独写。" class="headerlink" title="以上是DRBD单独的安装配置过程，想要让DRBD自动的完成主备的切换可以用pacemaker来配合完成，下一节再单独写。"></a>以上是DRBD单独的安装配置过程，想要让DRBD自动的完成主备的切换可以用pacemaker来配合完成，下一节再单独写。</h2><h4 id="参考：http-blog-csdn-net-hewy0526-article-details-18366653"><a href="#参考：http-blog-csdn-net-hewy0526-article-details-18366653" class="headerlink" title="参考：http://blog.csdn.net/hewy0526/article/details/18366653"></a>参考：<a href="http://blog.csdn.net/hewy0526/article/details/18366653" target="_blank" rel="external">http://blog.csdn.net/hewy0526/article/details/18366653</a></h4><h4 id="《DRBD中文指南》网盘链接：http-pan-baidu-com-s-1nvhquiH-密码：2mdf"><a href="#《DRBD中文指南》网盘链接：http-pan-baidu-com-s-1nvhquiH-密码：2mdf" class="headerlink" title="《DRBD中文指南》网盘链接：http://pan.baidu.com/s/1nvhquiH 密码：2mdf"></a>《DRBD中文指南》网盘链接：<a href="http://pan.baidu.com/s/1nvhquiH" target="_blank" rel="external">http://pan.baidu.com/s/1nvhquiH</a> 密码：2mdf</h4>
+      
+    </div>
+    
+  </div>
+  
+    
+    <div class="copyright">
+        <p><span>本文标题:</span><a href="/2017/04/27/drbd简介和安装配置/">drbd简介和安装配置</a></p>
+        <p><span>文章作者:</span><a href="/" title="回到主页">马云乐</a></p>
+        <p><span>发布时间:</span>2017-04-27, 23:03:48</p>
+        <p><span>最后更新:</span>2017-04-27, 23:07:16</p>
+        <p>
+            <span>原始链接:</span><a class="post-url" href="/2017/04/27/drbd简介和安装配置/" title="drbd简介和安装配置">http://www.mayunle.com/2017/04/27/drbd简介和安装配置/</a>
+            <span class="copy-path" data-clipboard-text="原文: http://www.mayunle.com/2017/04/27/drbd简介和安装配置/　　作者: 马云乐" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
+            <script> var clipboard = new Clipboard('.copy-path'); </script>
+        </p>
+        <p>
+            <span>许可协议:</span><i class="fa fa-creative-commons"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" title="CC BY-NC-SA 4.0 International" target = "_blank">"署名-非商用-相同方式共享 4.0"</a> 转载请保留原文链接及作者。
+        </p>
+    </div>
+
+
+
+    <nav id="article-nav">
+        
+        
+            <div id="article-nav-older" class="article-nav-title">
+                <a href="/2017/03/07/千里之行，始于足下/">
+                    千里之行，始于足下
+                </a>
+            </div>
+        
+    </nav>
+
+  
+</article>
+
+    <div id="toc" class="toc-article">
+        <strong class="toc-title">文章目录</strong>
+        
+            <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#drbd简介和安装配置"><span class="toc-number">1.</span> <span class="toc-text">drbd简介和安装配置</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#一、DRBD简介"><span class="toc-number">1.1.</span> <span class="toc-text">一、DRBD简介</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#二、DRBD安装配置"><span class="toc-number">1.2.</span> <span class="toc-text">二、DRBD安装配置</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1、环境介绍"><span class="toc-number">1.2.1.</span> <span class="toc-text">1、环境介绍</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2、通过yum源安装drbd和相关软件包-双机执行"><span class="toc-number">1.2.2.</span> <span class="toc-text">2、通过yum源安装drbd和相关软件包(双机执行)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3、系统默认内核不支持drbd模块，更新内核（双机执行）"><span class="toc-number">1.2.3.</span> <span class="toc-text">3、系统默认内核不支持drbd模块，更新内核（双机执行）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4、在两个节点上配置drbd资源描述文件-etc-drbd-d-r0-res（双机执行）"><span class="toc-number">1.2.4.</span> <span class="toc-text">4、在两个节点上配置drbd资源描述文件: /etc/drbd.d/r0.res（双机执行）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5、设置drbd资源（双机执行）"><span class="toc-number">1.2.5.</span> <span class="toc-text">5、设置drbd资源（双机执行）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6、启动drbd服务-双机执行"><span class="toc-number">1.2.6.</span> <span class="toc-text">6、启动drbd服务 (双机执行)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7、指定master为主节点-master上执行"><span class="toc-number">1.2.7.</span> <span class="toc-text">7、指定master为主节点(master上执行)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8、查看drbd状态"><span class="toc-number">1.2.8.</span> <span class="toc-text">8、查看drbd状态</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#三、DRBD简单使用与验证"><span class="toc-number">1.3.</span> <span class="toc-text">三、DRBD简单使用与验证</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1、在主节点上格式化-dev-drbd0-（master上执行）"><span class="toc-number">1.3.1.</span> <span class="toc-text">1、在主节点上格式化/dev/drbd0 （master上执行）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2、挂载到准备好的目录上-master上执行"><span class="toc-number">1.3.2.</span> <span class="toc-text">2、挂载到准备好的目录上(master上执行)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3、手动切换"><span class="toc-number">1.3.3.</span> <span class="toc-text">3、手动切换</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#以上是DRBD单独的安装配置过程，想要让DRBD自动的完成主备的切换可以用pacemaker来配合完成，下一节再单独写。"><span class="toc-number">1.4.</span> <span class="toc-text">以上是DRBD单独的安装配置过程，想要让DRBD自动的完成主备的切换可以用pacemaker来配合完成，下一节再单独写。</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#参考：http-blog-csdn-net-hewy0526-article-details-18366653"><span class="toc-number">1.4.0.1.</span> <span class="toc-text">参考：http://blog.csdn.net/hewy0526/article/details/18366653</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#《DRBD中文指南》网盘链接：http-pan-baidu-com-s-1nvhquiH-密码：2mdf"><span class="toc-number">1.4.0.2.</span> <span class="toc-text">《DRBD中文指南》网盘链接：http://pan.baidu.com/s/1nvhquiH 密码：2mdf</span></a></li></ol></li></ol></li></ol></li></ol>
+        
+    </div>
+    <style>
+        .left-col .switch-btn,
+        .left-col .switch-area {
+            display: none;
+        }
+        .toc-level-3 i,
+        .toc-level-3 ol {
+            display: none !important;
+        }
+    </style>
+
+    <input type="button" id="tocButton" value="隐藏目录"  title="点击按钮隐藏或者显示文章目录">
+
+    <script>
+        yiliaConfig.toc = ["隐藏目录", "显示目录", !!"false"];
+    </script>
+
+
+
+    
+<div class="share">
+    
+        <div class="bdsharebuttonbox">
+            <a href="#" class="fa fa-twitter bds_twi" data-cmd="twi" title="分享到推特"></a>
+            <a href="#" class="fa fa-weibo bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a>
+            <a href="#" class="fa fa-qq bds_sqq" data-cmd="sqq" title="分享给 QQ 好友"></a>
+            <a href="#" class="fa fa-files-o bds_copy" data-cmd="copy" title="复制网址"></a>
+            <a href="#" class="fa fa fa-envelope-o bds_mail" data-cmd="mail" title="通过邮件分享"></a>
+            <a href="#" class="fa fa-weixin bds_weixin" data-cmd="weixin" title="生成文章二维码"></a>
+            <a href="#" class="fa fa-share-alt bds_more" data-cmd="more"></i></a>
+        </div>
+        <script>
+            window._bd_share_config={
+                "common":{"bdSnsKey":{},"bdText":"drbd简介和安装配置　| 风雨中，谁又将谁遗忘　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+        </script>
+    
+
+    
+</div>
+
+
+
+
+
+
+
+    
+      <div class="duoshuo" id="comments">
+    <div id="comment-box" ></div>
+    <div class="ds-thread" id="ds-thread" data-thread-key="2017/04/27/drbd简介和安装配置/" data-title="drbd简介和安装配置" data-url="http://www.mayunle.com/2017/04/27/drbd简介和安装配置/"></div>
+    <script>
+        var duoshuoQuery = {short_name:"mayunle"};
+        var loadComment = function(){
+            var d = document, s = d.createElement('script');
+            s.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+            s.async = true; s.charset = 'UTF-8';
+            (d.head || d.body).appendChild(s);
+        }
+
+        
+            // Add comment count
+            $(function(){ 
+                var jsonUrl = "http://api.duoshuo.com/threads/counts.jsonp?short_name=mayunle&threads=2017/04/27/drbd简介和安装配置/&callback=?";
+                $.getJSON(jsonUrl, function(result){
+                    $.each(result.response, function(i, field){
+                        var value = field.comments;
+                        if (value > 0) {
+                            $(".count-comment").text(value);
+                            return;
+                        }
+                    })
+                })
+            })
+        
+    </script>
+    
+    <aside class="comment-bar">
+        <a href="javascript:void(0);">
+            <i class="fa fa-commenting-o animated infinite pulse"></i>
+            <i class="fa fa-spinner fa-pulse"></i>
+            <span class="count-comment"></span>
+        </a>
+    </aside>
+    <script>
+        var $commentBar = $("#comments aside.comment-bar");
+        var load$hide = function(){
+            $commentBar.find("a > i").toggle();
+            loadComment();
+            $commentBar.fadeOut(800);
+        }
+        $commentBar.click(function(){
+            load$hide();
+        })
+        $commentBar.children("a").hover(function(){
+            load$hide();
+        })
+        if (window.location.hash === "#comments") {
+            load$hide();
+        }
+    </script>
+
+</div>
+    
+
+
+
+
+    <div class="scroll" id="post-nav-button">
+        
+            <a href="/" title="回到主页"><i class="fa fa-home"></i></a>
+        
+
+        <a title="文章列表"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
+
+        
+            <a href="/2017/03/07/千里之行，始于足下/" title="下一篇: 千里之行，始于足下">
+                <i class="fa fa-angle-right"></i>
+            </a>
+        
+    </div>
+
+    <ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2017/04/27/drbd简介和安装配置/">drbd简介和安装配置</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/03/07/千里之行，始于足下/">千里之行，始于足下</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/03/06/hello-world/">Hello World</a></li></ul>
+
+
+
+
+    <script>
+        
+    </script>
+</div>
+      <footer id="footer">
+    <div class="outer">
+        <div id="footer-info">
+            <div class="footer-left">
+                <i class="fa fa-copyright"></i> 
+                2016-2017 马云乐
+            </div>
+        </div>
+        
+            <div class="visit">
+                
+                    <span id="busuanzi_container_site_pv" style='display:none'>
+                        <span id="site-visit" title="本站到访数"><i class="fa fa-user" aria-hidden="true"></i><span id="busuanzi_value_site_uv"></span>
+                        </span>
+                    </span>
+                
+                
+                    <span>| </span>
+                
+                
+                    <span id="busuanzi_container_page_pv" style='display:none'>
+                        <span id="page-visit"  title="本页阅读量"><i class="fa fa-eye animated infinite pulse" aria-hidden="true"></i><span id="busuanzi_value_page_pv"></span>
+                        </span>
+                    </span>
+                
+            </div>
+        
+    </div>
+</footer>
+
+    </div>
+    
+<script data-main="/js/main.js" src="//cdn.bootcss.com/require.js/2.2.0/require.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            var iPad = window.navigator.userAgent.indexOf('iPad');
+            if (iPad > -1 || $(".left-col").css("display") === "none") {
+                var bgColorList = ["#9db3f4", "#414141", "#e5a859", "#f5dfc6", "#c084a0", "#847e72", "#cd8390", "#996731"];
+                var bgColor = Math.ceil(Math.random() * (bgColorList.length - 1));
+                $("body").css({"background-color": bgColorList[bgColor], "background-size": "cover"});
+            }
+            else {
+                var backgroundnum = 5;
+                var backgroundimg = "url(/background/bg-x.jpg)".replace(/x/gi, Math.ceil(Math.random() * backgroundnum));
+                $("body").css({"background": backgroundimg, "background-attachment": "fixed", "background-size": "cover"});
+            }
+        })
+    </script>
+
+
+
+
+
+<div class="scroll" id="scroll">
+    <a href="#" title="返回顶部"><i class="fa fa-arrow-up"></i></a>
+    <a href="#comments" onclick="load$hide();" title="查看评论"><i class="fa fa-comments-o"></i></a>
+    <a href="#footer" title="转到底部"><i class="fa fa-arrow-down"></i></a>
+</div>
+<script>
+    // Open in New Window
+    
+        var oOpenInNew = {
+            
+            
+            
+            
+            
+            
+             archives: ".archive-article-title", 
+             miniArchives: "a.post-list-link", 
+            
+             friends: "#js-friends a", 
+             socail: ".social a" 
+        }
+        for (var x in oOpenInNew) {
+            $(oOpenInNew[x]).attr("target", "_blank");
+        }
+    
+</script>
+
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+  </div>
+</body>
+</html>
